@@ -1,22 +1,25 @@
 package com.thinking.machines.hr.dl.dao;
-import java.io.*;
-import java.util.*;
 import com.thinking.machines.hr.dl.exceptions.*;
 import com.thinking.machines.hr.dl.interfaces.*;
 import com.thinking.machines.hr.dl.dto.*;
+import java.io.*;
+import java.util.*;
 
 public class DesignationDAO implements DesignationDAOInterface
 {
 
 public void add(DesignationDTOInterface DesignationDTO) throws DAOException
 {
+if(DesignationDTO==null) throw new DAOException("Designation cannot be null.");
+if(DesignationDTO.getTitle()==null || DesignationDTO.getTitle().trim().length()==0) throw new DAOException("Designation needed to add, found no designation.");
+if(DesignationDTO.getCode()!=0) throw new DAOException("You can not set the designation code. Designation code should be zero.");
 try
 {
 File file=new File(DESIGNATION_DATA_FILE);
-int lastGenratedCode=0;
-int count=0;
 RandomAccessFile randomAccessFile;
 randomAccessFile=new RandomAccessFile(file,"rw");
+int lastGenratedCode=0;
+int count=0;
 if(randomAccessFile.length()==0) 
 {
 randomAccessFile.writeBytes("0         \n");
@@ -55,24 +58,31 @@ randomAccessFile.close();
 DesignationDTO.setCode(vCode);
 }catch(IOException ioException)
 {
+randomAccessFile.close();
 throw new DAOException(ioException.getMessage());
 }
 }
 
 public void update(DesignationDTOInterface DesignationDTO) throws DAOException
 {
+if(DesignationDTO==null) throw new DAOException("Designation cannot be null.");
+if(DesignationDTO.getTitle()==null || DesignationDTO.getTitle().trim().length()==0) throw new DAOException("Designation needed to add, found no designation.");
+if(DesignationDTO.getCode()<0) throw new DAOException("Invalid designation code. Designation code should cannot be negative.");
 int uCode=DesignationDTO.getCode();
 String uTitle=DesignationDTO.getTitle();
 try
 {
-boolean found=false;
-String fTitle=" ";
+boolean codeFound=false;
+boolean titleFound=false;
+String fTitle="";
 int fCode=0;
 File file=new File(DESIGNATION_DATA_FILE);
 if(!file.exists()) throw new DAOException("Invail Designation code : "+uCode);
 RandomAccessFile randomAccessFile=new RandomAccessFile(file,"rw");
 if(randomAccessFile.length()==0)
 {
+randomAccessFile.writeBytes("0         \n");
+randomAccessFile.writeBytes("0         \n");
 randomAccessFile.close();
 throw new DAOException("Invail Designation code : "+uCode);
 }
@@ -83,34 +93,21 @@ randomAccessFile.readLine();
 while(randomAccessFile.getFilePointer()<randomAccessFile.length())
 {
 fCode=Integer.parseInt(randomAccessFile.readLine().trim());
-randomAccessFile.readLine();
-if(fCode==uCode)
-{
-found=true;
-break;
+fTitle=randomAccessFile.readLine().trim();
+if(fCode==uCode) codeFound=true;
+if(fTitle.equalsIgnoreCase(uTitle)) titleFound=true;
 }
-}
-if(!found)
+if(!codeFound)
 {
 randomAccessFile.close();
 throw new DAOException("Invail Designation code : "+uCode);
 }
-
-//Checking the Existance of Title
-randomAccessFile.seek(0);
-randomAccessFile.readLine();
-randomAccessFile.readLine();
-while(randomAccessFile.getFilePointer()<randomAccessFile.length())
-{
-randomAccessFile.readLine();
-fTitle=randomAccessFile.readLine().trim();
-if(fTitle.equalsIgnoreCase(uTitle))
+if(titlefound)
 {
 randomAccessFile.close();
-throw new DAOException("Title allready exists : "+uTitle);
+throw new DAOException("Title: "+uTitle+" already exsits.");
 }
-}
-
+  
 randomAccessFile.seek(0);
 File tmpFile=new File("falthu.data");
 if(tmpFile.exists()) tmpFile.delete();
@@ -144,22 +141,26 @@ randomAccessFile.close();
 tmpRandomAccessFile.close();
 }catch(IOException ioException)
 {
+randomAccessFile.close();
 throw new DAOException(ioException.getMessage());
 }
 }
 
 public void delete(int code) throws DAOException
 {
+if(code<0) throw new DAOException("Invalid designation code: Code can not be negative.");
 try
 {
 boolean found=false;
-String fTitle=" ";
+String fTitle="";
 int fCode=0;
 File file=new File(DESIGNATION_DATA_FILE);
 if(!file.exists()) throw new DAOException("Invail Designation code : "+code);
 RandomAccessFile randomAccessFile=new RandomAccessFile(file,"rw");
 if(randomAccessFile.length()==0)
 {
+randomAccessFile.writeBytes("0         \n");
+randomAccessFile.writeBytes("0         \n");
 randomAccessFile.close();
 throw new DAOException("Invail Designation code : "+code);
 }
@@ -179,7 +180,7 @@ break;
 if(!found)
 {
 randomAccessFile.close();
-throw new DAOException("Invail Designation code : "+code);
+throw new DAOException("Invail Designation code : "+code+". Code do not exists");
 }
 randomAccessFile.seek(0);
 File tmpFile=new File("falthu.data");
@@ -211,12 +212,14 @@ randomAccessFile.close();
 tmpRandomAccessFile.close();
 }catch(IOException ioException)
 {
+randomAccessFile.close();
 throw new DAOException(ioException.getMessage());
 }
 }
 
 public DesignationDTOInterface getByCode(int code)throws DAOException
 {
+if(code<0) throw new DAOException("Invalid designation code: "+code+". Code can not be negative.");
 try
 {
 File file=new File(DESIGNATION_DATA_FILE);
@@ -224,6 +227,8 @@ if(!file.exists()) throw new DAOException("Invalid Designation code : "+code);
 RandomAccessFile randomAccessFile=new RandomAccessFile(file,"rw");
 if(randomAccessFile.length()==0)
 {
+randomAccessFile.writeBytes("0         \n");
+randomAccessFile.writeBytes("0         \n");
 randomAccessFile.close();
 throw new DAOException("Invalid Designation code : "+code);
 }
@@ -233,8 +238,8 @@ randomAccessFile.readLine();
 DesignationDTOInterface DesignationDTO;
 while(randomAccessFile.getFilePointer()<randomAccessFile.length())
 {
-int fCode=Integer.parseInt(randomAccessFile.readLine());
-String fTitle=randomAccessFile.readLine();
+int fCode=Integer.parseInt(randomAccessFile.readLine().trim());
+String fTitle=randomAccessFile.readLine().trim();
 if(fCode==code)
 {
 randomAccessFile.close();
@@ -245,15 +250,17 @@ return DesignationDTO;
 }
 }
 randomAccessFile.close();
-throw new DAOException("Invalid Designation Code : "+code);
+throw new DAOException("Invalid Designation Code : "+code+". Code doesn't exists.");
 }catch(IOException ioException)
 {
+randomAccessFile.close();
 throw new DAOException(ioException.getMessage());
 }
 }
 
 public DesignationDTOInterface getByTitle(String title)throws DAOException
 {
+if(title==null || title.trim().length()==0) throw new DAOException("Invalid Title.");
 try
 {
 File file=new File(DESIGNATION_DATA_FILE);
@@ -261,6 +268,8 @@ if(!file.exists()) throw new DAOException("Invalid Designation title : "+title);
 RandomAccessFile randomAccessFile=new RandomAccessFile(file,"rw");
 if(randomAccessFile.length()==0)
 {
+randomAccessFile.writeBytes("0         \n");
+randomAccessFile.writeBytes("0         \n");
 randomAccessFile.close();
 throw new DAOException("Invalid Designation title : "+title);
 }
@@ -270,8 +279,8 @@ randomAccessFile.readLine();
 DesignationDTOInterface DesignationDTO;
 while(randomAccessFile.getFilePointer()<randomAccessFile.length())
 {
-int fCode=Integer.parseInt(randomAccessFile.readLine());
-String fTitle=randomAccessFile.readLine();
+int fCode=Integer.parseInt(randomAccessFile.readLine().trim());
+String fTitle=randomAccessFile.readLine().trim();
 if(fTitle.equalsIgnoreCase(title.trim()))
 {
 randomAccessFile.close();
@@ -282,9 +291,10 @@ return DesignationDTO;
 }
 }
 randomAccessFile.close();
-throw new DAOException("Invalid Designation title : "+title);
+throw new DAOException("Invalid Designation title : "+title+". Title do not exists.");
 }catch(IOException ioException)
 { 
+randomAccessFile.close();
 throw new DAOException(ioException.getMessage());
 }
 }
@@ -310,7 +320,7 @@ DesignationDTOInterface DesignationDTO;
 while(randomAccessFile.getFilePointer()<randomAccessFile.length())
 {
 int fCode=Integer.parseInt(randomAccessFile.readLine().trim());
-String fTitle=randomAccessFile.readLine();
+String fTitle=randomAccessFile.readLine().trim();
 DesignationDTO=new DesignationDTO();
 DesignationDTO.setCode(fCode);
 DesignationDTO.setTitle(fTitle);
@@ -319,6 +329,7 @@ designations.add(DesignationDTO);
 return designations;
 }catch(IOException ioException)
 {
+randomAccessFile.close();
 throw new DAOException(ioException.getMessage());
 }
 }
@@ -342,12 +353,14 @@ randomAccessFile.close();
 return count;
 }catch(IOException ioException)
 {
+randomAccessFile.close();
 throw new DAOException(ioException.getMessage());
 }
 }
 
 public boolean exists(int code) throws DAOException
 {
+if(code<0) throw new DAOException("Invalid designation code: "+code+". Code can not be zero.");
 try
 {
 File file=new File(DESIGNATION_DATA_FILE);
@@ -376,12 +389,14 @@ randomAccessFile.close();
 return false;
 }catch(IOException ioException)
 {
+randomAccessFile.close();
 throw new DAOException(ioException.getMessage());
 }
 }
 
 public boolean exists(String title) throws DAOException
 {
+if(title==null || title.trim().length()==0) throw new DAOException("Invalid title.");
 try
 {
 File file=new File(DESIGNATION_DATA_FILE);
@@ -400,7 +415,7 @@ while(randomAccessFile.getFilePointer()<randomAccessFile.length())
 String vTitle;
 randomAccessFile.readLine();
 vTitle=randomAccessFile.readLine().trim();
-if(vTitle.equalsIgnoreCase(title))
+if(vTitle.equalsIgnoreCase(title.trim()))
 {
 randomAccessFile.close();
 return true;
@@ -410,6 +425,7 @@ randomAccessFile.close();
 return false;
 }catch(IOException ioException)
 {
+randomAccessFile.close();
 throw new DAOException(ioException.getMessage());
 }
 }
