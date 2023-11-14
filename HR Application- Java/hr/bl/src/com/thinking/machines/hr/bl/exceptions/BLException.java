@@ -36,13 +36,14 @@ else this.genericException=genericException.trim();
 
 public void addException(String property,String exception)
 {
-if(exception==null || exception.length()==0) this.exceptions.remove(property);
-else this.exceptions.put(property,exception);
+if(exception==null || exception.trim().length()==0) this.exceptions.remove(property.trim());
+else this.exceptions.put(property.trim(),exception.trim());
 }
 
 public void removeException(String property)
 {
-this.exceptions.remove(property);
+if(property==null || property.trim().length()==0) return;
+this.exceptions.remove(property.trim());
 }
 
 public boolean hasException(String property)
